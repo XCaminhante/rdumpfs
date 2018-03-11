@@ -4,6 +4,7 @@
 #   -f: force potentially dangerous operations
 #
 # Written by Leah Neukirchen <http://purl.org/net/chneukirchen>.
+# Modified by X Caminhante <https://github.com/XCaminhante>.
 # rdumpfs is in the public domain.
 #
 # To the extent possible under law, the creator of this work has waived
@@ -22,11 +23,11 @@ force=false
 Usage: rdumpfs [-f] [RSYNCOPT...] SRC [SRC...] DST"
 
 src=("${@:1:$#-1}")
-dst=${!#}
+dst="${!#}"
 
-now=$(date +%Y%m%d)
-dumps=($(rsync --no-h $dst/ | cut -c44- | grep '^[0-9]*$' | sort -nr))
-last=${dumps[0]}
+now="$(date +%Y%m%d)"
+dumps=($(rsync --no-h "$dst"/ | cut -c44- | grep '^[0-9]*$' | sort -nr))
+last="${dumps[0]}"
 
 : ${RDUMPFS_DEFAULT_ARGS:=-aHAX}
 rsync_args=($RDUMPFS_DEFAULT_ARGS --stats --human-readable
@@ -37,18 +38,18 @@ rsync_args+=(${VARIANT:+--filter='dir-merge /.rdumpfs.'$VARIANT})
 if [[ -z "$last" ]]; then
   $force || fail "no dump found, use -f on first dump."
 else
-  rsync_args+=(--link-dest=../$last)
+  rsync_args+=(--link-dest=../"$last")
 fi
 
 if [[ "$last" = "$now" ]]; then
   $force || fail "dump $now exists, use -f to overwrite/update."
-  [[ -n "${dumps[1]}" ]] && rsync_args+=(--link-dest=../${dumps[1]})
+  [[ -n "${dumps[1]}" ]] && rsync_args+=(--link-dest=../"${dumps[1]}")
   rsync_args+=(--delete-delay --delete-excluded)
 fi
 
-LOGFILE=$(mktemp -t .rdumpfs.XXXXXXXX.log)
-rsync --log-file $LOGFILE "${rsync_args[@]}" "${src[@]}" "$dst/$now"
+LOGFILE="$(mktemp -t .rdumpfs.XXXXXXXX).log"
+rsync --log-file "$LOGFILE" "${rsync_args[@]}" "${src[@]}" "$dst/$now"
 EC=$?
-rsync $LOGFILE "$dst/$now/"
-(( $EC )) || rm -f $LOGFILE
+rsync "$LOGFILE" "$dst/$now/"
+(( $EC )) || rm -f "$LOGFILE"
 exit $EC
